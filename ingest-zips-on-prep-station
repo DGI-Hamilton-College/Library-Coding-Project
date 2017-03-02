@@ -1,0 +1,88 @@
+#!/bin/bash -x
+# filename: ingest-zips-on-prep-station (2017-02-28)
+#########################
+# PURPOSE:
+# 1. To read a file containing the names of zip files that are ready to be ingested into Islandora
+# 2. Ingest the objects in each zip file.
+# PREPARATION:
+# 1. Put names of zip files in the file: PROJECT_PATH/ids/zip-ids.txt
+# 2. Put the zip files in PUBLIC_PATH/zips
+# MOUNTING THE DATA DRIVE: diglib-15/f$
+# Whenever you rebuild the Islandora Vagrant image run you have to re-mount the "diglib-15/f$" Windows drive.
+# This will be necessary also whenever the diglib-15 is not available or shows no subdirectories, or whenever this host is rebooted.
+# 1. Become root: > sudo su -
+# 2. Run: apt-get install cifs-utils
+# 3. Run: mount -t cifs -o username=pmacdona,uid=1000,gid=1000,domain=HAMILTON-D //diglib-15/f$ /home/vagrant/diglib-15
+# CONFIGURATION:
+# Set the PUBLIC_PATH variable to the path to the zip files.
+# This script can be used to ingest into either a Production Islandora server or a Prep Station.
+#########################
+
+# SET THE DIRECTORY WHERE THIS SCRIPT RUNS
+PROJECT_PATH=`pwd`
+
+# SET THE DIRECTORY WHERE THE ZIP FILES ARE STORED
+TODAY_DATE=date
+PUBLIC_PATH=~/diglib-15/techSpace/ingest-prep
+DRUPAL_HOME=/var/www/drupal
+# read -p "Select content type:
+# a)Large Images
+# b)Serials 
+# c)PDF
+# d)BookCModel
+# e)Newspaper
+# f)audio model
+# g)video
+# h)_newspaper issue
+# i)basic
+# >
+# :" conMod
+
+# if [ "$conMod" == "a" ] 
+ # then
+	 # conType=islandora:sp_large_image_cmodel
+# elif [ "$conMod" == "b" ] 
+	# then
+	 # conType=islandora:newspaperPageCModel
+# elif [ "$conMod" == "c" ] 
+	# then
+	 # conType=islandora:sp_pdf
+# elif [ "$conMod" == "d" ] 
+	# then
+	 # conType=islandora:bookCModel
+# elif [ "$conMod" == "e" ] 
+# #book preprocess
+	# then
+	 # conType=islandora:newspaperPageCModel
+# elif [ "$conMod" == "f" ] 
+	# then
+	 # conType=islandora:sp-audioCModel
+# elif [ "$conMod" == "g" ] 
+	# then
+	 # conType=islandora:sp_videoCModel
+# elif [ "$conMod" == "h" ]  
+	# then
+	 # conType=islandora:newspaperIssueCModel
+# elif [ "$conMod" == "i" ] 
+	# then
+	 # conType=islandora:sp_basic_image
+# else
+	# echo "Invalid Choice.  Figure your letters out dummy"
+# fi
+for ID in `cat ids/zips.txt`; do
+   echo $ID
+   
+   cd $DRUPAL_HOME
+ drush -v --user=admin --uri=http://localhost:8000 islandora_batch_scan_preprocess --content_models=islandora:sp_large_image_cmodel --namespace=prep --parent=prep:snow_hill --parent_relationship_pred=isMemberOfCollection --type=zip --target=$PUBLIC_PATH/zips/$ID
+   sleep 3
+	
+done
+
+# # exit 0
+
+ drush -v --user=admin --uri=https://localhost:8000 islandora_batch_ingest
+ 
+ mkdir $PUBLIC_PATH/derivatives-$TODAY_DATE
+ cp -r /tmp/prep_* $PUBLIC_PATH/derivatives-$TODAY_DATE
+ 
+ echo -e "END OF PROGRAM..\n"
